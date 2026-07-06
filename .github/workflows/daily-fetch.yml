@@ -1,0 +1,32 @@
+name: daily-fetch
+
+on:
+  schedule:
+    - cron: "30 20 * * *"   # 매일 05:30 KST
+  workflow_dispatch:         # 수동 실행 버튼
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-update
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Fetch trend data
+        run: python fetch.py
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data
+          git diff --cached --quiet || git commit -m "daily fetch $(date -u +%F)"
+          git pull --rebase origin main
+          git push

@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>피키픽시 트렌드 워치</title>
+<style>
+  :root{
+    --pink:#f0568c; --pink-soft:#fde8f0; --ink:#26212b; --sub:#8a8394;
+    --bg:#faf7f9; --card:#ffffff; --line:#eee3ea;
+    --yt:#ff0033; --tt:#111111; --ig:#d6249f;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{font-family:"Apple SD Gothic Neo","Pretendard",sans-serif; background:var(--bg); color:var(--ink)}
+
+  header{position:sticky; top:0; z-index:20; background:#fffdfeee; backdrop-filter:blur(8px);
+         border-bottom:1px solid var(--line); padding:14px 24px; display:flex; align-items:center; gap:14px}
+  header h1{font-size:19px; letter-spacing:-.3px}
+  header h1 b{color:var(--pink)}
+  #lastUpdated{font-size:12px; color:var(--sub)}
+  header .spacer{flex:1}
+  button{font-family:inherit; cursor:pointer; border:none; border-radius:10px; font-size:13px}
+  .btn{padding:9px 16px; background:var(--pink); color:#fff; font-weight:700}
+  .btn.ghost{background:#fff; color:var(--ink); border:1px solid var(--line)}
+  .btn:disabled{opacity:.5; cursor:wait}
+
+  .filters{padding:16px 24px 4px; display:flex; flex-wrap:wrap; gap:10px; align-items:center}
+  .tabs{display:flex; gap:6px; background:#fff; border:1px solid var(--line); border-radius:12px; padding:4px}
+  .tabs button{padding:7px 14px; border-radius:9px; background:transparent; color:var(--sub); font-weight:600}
+  .tabs button.on{background:var(--pink-soft); color:var(--pink)}
+  .chips{display:flex; gap:6px; flex-wrap:wrap}
+  .chip{padding:7px 12px; border-radius:999px; background:#fff; border:1px solid var(--line); color:var(--sub); font-weight:600}
+  .chip.on{background:var(--ink); border-color:var(--ink); color:#fff}
+  select,input[type=text],input[type=number],textarea{
+    font-family:inherit; font-size:13px; padding:8px 10px; border:1px solid var(--line);
+    border-radius:10px; background:#fff; color:var(--ink)}
+  #search{width:200px}
+
+  #stats{padding:6px 24px; font-size:12.5px; color:var(--sub)}
+
+  .grid{padding:12px 24px 60px; display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:16px}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden;
+        display:flex; flex-direction:column; transition:transform .12s, box-shadow .12s}
+  .card:hover{transform:translateY(-2px); box-shadow:0 8px 22px #e8b6cb44}
+  .thumbWrap{position:relative; aspect-ratio:9/12; background:#efe9ee; overflow:hidden}
+  .thumbWrap img{width:100%; height:100%; object-fit:cover; display:block}
+  .badge{position:absolute; top:8px; left:8px; font-size:11px; font-weight:800; color:#fff;
+         padding:3px 8px; border-radius:6px}
+  .badge.youtube{background:var(--yt)} .badge.tiktok{background:var(--tt)} .badge.instagram{background:var(--ig)}
+  .views{position:absolute; bottom:8px; right:8px; background:#000000b8; color:#fff;
+         font-size:12px; font-weight:700; padding:3px 8px; border-radius:6px}
+  .meta{padding:10px 12px 12px; display:flex; flex-direction:column; gap:5px; flex:1}
+  .meta .title{font-size:13px; line-height:1.42; font-weight:600;
+               display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+  .meta .sub{font-size:11.5px; color:var(--sub); display:flex; justify-content:space-between; gap:6px}
+  .meta .kw{font-size:11px; color:var(--pink); background:var(--pink-soft);
+            align-self:flex-start; padding:2px 8px; border-radius:999px; margin-top:auto}
+  a.cardLink{text-decoration:none; color:inherit; display:flex; flex-direction:column; flex:1}
+
+  .igPanel{margin:12px 24px 0; background:#fff; border:1px dashed #e3b7cd; border-radius:14px; padding:16px 18px}
+  .igPanel h3{font-size:14px; margin-bottom:6px}
+  .igPanel p{font-size:12.5px; color:var(--sub); line-height:1.6}
+  .igLinks{display:flex; flex-wrap:wrap; gap:6px; margin:10px 0}
+  .igLinks a{font-size:12px; color:var(--ig); background:#fbeaf6; padding:5px 10px;
+             border-radius:999px; text-decoration:none; font-weight:600}
+  .igForm{display:flex; flex-wrap:wrap; gap:8px; margin-top:8px}
+  .igForm input{flex:1; min-width:130px}
+  .igForm input.urlIn{flex:2; min-width:220px}
+  .delBtn{background:#fff; border:1px solid var(--line); color:#c25; font-size:11px;
+          padding:3px 8px; border-radius:6px; align-self:flex-start}
+
+  dialog{border:none; border-radius:16px; padding:0; width:min(520px,92vw); box-shadow:0 20px 60px #0003}
+  dialog::backdrop{background:#26212b66}
+  .dlgBody{padding:22px 24px}
+  .dlgBody h2{font-size:16px; margin-bottom:14px}
+  .field{margin-bottom:14px}
+  .field label{display:block; font-size:12.5px; font-weight:700; margin-bottom:5px}
+  .field .hint{font-size:11.5px; color:var(--sub); margin-top:4px; line-height:1.5}
+  .field input,.field textarea{width:100%}
+  .field textarea{height:110px; resize:vertical}
+  .dlgFoot{display:flex; justify-content:flex-end; gap:8px; padding:14px 24px;
+           border-top:1px solid var(--line); background:#fdfafb}
+
+  #toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--ink);
+         color:#fff; font-size:13px; padding:11px 20px; border-radius:12px; display:none; z-index:50;
+         max-width:80vw; white-space:pre-line}
+  .empty{grid-column:1/-1; text-align:center; color:var(--sub); padding:70px 0; font-size:14px; line-height:1.8}
+
+  /* 주간 리포트 */
+  #reportDlg{width:min(760px,94vw)}
+  #reportBody{padding:6px 26px 22px; max-height:70vh; overflow-y:auto; font-size:14px; line-height:1.75}
+  #reportBody h1{font-size:19px; margin:16px 0 8px; color:var(--pink)}
+  #reportBody h2{font-size:16px; margin:20px 0 8px; border-bottom:1px solid var(--line); padding-bottom:5px}
+  #reportBody h3{font-size:14px; margin:14px 0 6px}
+  #reportBody ul,#reportBody ol{padding-left:22px; margin:6px 0}
+  #reportBody blockquote{border-left:3px solid var(--pink-soft); color:var(--sub);
+                         padding:4px 12px; margin:8px 0; font-size:13px}
+  #reportBody a{color:var(--pink)}
+  #reportSel{margin:14px 26px 0}
+
+  /* 정적 모드(GitHub Pages)에서는 수집/설정 숨김 */
+  body.static #refreshBtn, body.static #settingsBtn{display:none}
+  #staticNote{display:none; font-size:11.5px; color:var(--sub)}
+  body.static #staticNote{display:inline}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎀 <b>피키픽시</b> 트렌드 워치</h1>
+  <span id="lastUpdated"></span>
+  <span id="staticNote">· 웹 버전 (데이터는 매일 아침 자동 갱신)</span>
+  <div class="spacer"></div>
+  <button class="btn ghost" onclick="openReport()">📊 주간 리포트</button>
+  <button class="btn ghost" id="settingsBtn" onclick="openSettings()">⚙️ 설정</button>
+  <button class="btn" id="refreshBtn" onclick="doRefresh()">↻ 오늘 데이터 수집</button>
+</header>
+
+<div class="filters">
+  <div class="tabs" id="platformTabs">
+    <button data-p="all" class="on">전체</button>
+    <button data-p="youtube">YouTube</button>
+    <button data-p="tiktok">TikTok</button>
+    <button data-p="instagram">Instagram</button>
+  </div>
+  <div class="chips" id="viewChips">
+    <button class="chip on" data-b="all">조회수 전체</button>
+    <button class="chip" data-b="1000000">100만+</button>
+    <button class="chip" data-b="100000">10만~100만</button>
+    <button class="chip" data-b="10000">1만~10만</button>
+    <button class="chip" data-b="0">1만 미만</button>
+  </div>
+  <select id="sortSel">
+    <option value="views">조회수순</option>
+    <option value="date">최신순</option>
+    <option value="likes">좋아요순</option>
+  </select>
+  <select id="kwSel"><option value="all">키워드 전체</option></select>
+  <input type="text" id="search" placeholder="제목·채널 검색">
+</div>
+
+<div id="stats"></div>
+
+<div class="igPanel" id="igPanel" style="display:none">
+  <h3>📸 Instagram Reels</h3>
+  <p>수집 시 공개 검색엔진을 통해 릴스 URL을 자동 발굴합니다 (검색엔진 차단 시 실패할 수 있음).
+     단, 인스타그램은 로그인 없이 조회수를 공개하지 않으므로 조회수는 카드의 <b>“조회수 입력”</b>으로 직접 보정합니다.
+     아래 해시태그 바로가기로 둘러본 뒤 좋은 릴스를 직접 등록할 수도 있습니다.</p>
+  <div class="igLinks" id="igLinks"></div>
+  <div class="igForm">
+    <input type="text" class="urlIn" id="igUrl" placeholder="릴스 URL (https://www.instagram.com/reel/...)">
+    <input type="text" id="igTitle" placeholder="제목/설명">
+    <input type="text" id="igChannel" placeholder="계정명">
+    <input type="number" id="igViews" placeholder="조회수 (숫자)">
+    <input type="text" id="igMemo" placeholder="메모 (왜 참고할 만한가)">
+    <button class="btn" onclick="addInstagram()">추가</button>
+  </div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<dialog id="settingsDlg">
+  <div class="dlgBody">
+    <h2>⚙️ 설정</h2>
+    <div class="field">
+      <label>검색 키워드 (한 줄에 하나)</label>
+      <textarea id="cfgKeywords"></textarea>
+      <div class="hint">키워드가 많을수록 수집이 오래 걸립니다 (키워드당 약 3~5초).</div>
+    </div>
+    <div class="field">
+      <label>수집 기간 (최근 N일, YouTube에 적용)</label>
+      <input type="number" id="cfgDays" min="1" max="365">
+      <div class="hint">1일=오늘 / 7일=이번 주 / 30일=이번 달 / 그 이상=올해 단위로 검색됩니다.</div>
+    </div>
+    <div class="field">
+      <label><input type="checkbox" id="cfgDomestic"> 국내(한국) 영상만 수집</label>
+    </div>
+    <div class="field">
+      <label><input type="checkbox" id="cfgIgAuto"> Instagram 릴스 자동 발굴 시도</label>
+      <div class="hint">공개 검색엔진을 통해 릴스 URL을 찾습니다. 검색엔진이 차단하면 실패할 수 있으며, 조회수는 인스타그램 정책상 자동 수집이 불가해 카드에서 직접 입력합니다.</div>
+    </div>
+  </div>
+  <div class="dlgFoot">
+    <button class="btn ghost" onclick="settingsDlg.close()">취소</button>
+    <button class="btn" onclick="saveSettings()">저장</button>
+  </div>
+</dialog>
+
+<dialog id="reportDlg">
+  <div class="dlgBody" style="padding-bottom:0">
+    <h2>📊 주간 마케팅 소구점 리포트</h2>
+  </div>
+  <select id="reportSel" onchange="showReport(this.value)"></select>
+  <div id="reportBody"></div>
+  <div class="dlgFoot">
+    <button class="btn ghost" onclick="reportDlg.close()">닫기</button>
+  </div>
+</dialog>
+
+<div id="toast"></div>
+
+<script>
+let ALL = [];            // 전체 영상
+let IG = [];             // 인스타 수동 등록
+let CFG = {};
+let STATIC = false;      // GitHub Pages 등 정적 호스팅 모드 (서버 API 없음)
+let state = {platform:'all', bucket:'all', sort:'views', kw:'all', q:''};
+
+const grid = document.getElementById('grid');
+const settingsDlg = document.getElementById('settingsDlg');
+const reportDlg = document.getElementById('reportDlg');
+
+// 정적 모드에서 브라우저에 저장되는 로컬 보정값
+const LS = {
+  get(k, d){ try{ return JSON.parse(localStorage.getItem('ppx_'+k)) ?? d }catch(e){ return d } },
+  set(k, v){ localStorage.setItem('ppx_'+k, JSON.stringify(v)) },
+};
+
+function fmtViews(n){
+  if(n === null || n === undefined) return '—';
+  if(n >= 100000000) return (n/100000000).toFixed(1).replace(/\.0$/,'') + '억';
+  if(n >= 10000)     return (n/10000).toFixed(1).replace(/\.0$/,'') + '만';
+  return n.toLocaleString('ko-KR');
+}
+function fmtDate(iso){
+  if(!iso) return '';
+  return iso.slice(0,10);
+}
+function toast(msg, ms=3500){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  clearTimeout(t._h); t._h = setTimeout(()=> t.style.display='none', ms);
+}
+
+async function loadAll(){
+  let v;
+  try{
+    const [vRes, cRes] = await Promise.all([fetch('/api/videos'), fetch('/api/config')]);
+    if(!vRes.ok || !cRes.ok) throw new Error('api');
+    v = await vRes.json();
+    CFG = await cRes.json();
+    ALL = v.videos || [];
+    IG = v.instagram_manual || [];
+  }catch(e){
+    // 서버 API 없음 → 정적 모드: 커밋된 JSON을 직접 읽는다
+    STATIC = true;
+    document.body.classList.add('static');
+    const [vRes, cRes] = await Promise.all([fetch('data/videos.json'), fetch('config.json')]);
+    const store = await vRes.json();
+    CFG = await cRes.json();
+    v = store;
+    ALL = Object.values(store.videos || {});
+    IG = (store.instagram_manual || []).concat(LS.get('ig_manual', []));
+    // 브라우저에 저장된 조회수 보정/숨김 반영
+    const ovr = LS.get('view_overrides', {});
+    const hidden = new Set(LS.get('hidden', []));
+    ALL = ALL.filter(x=>!hidden.has(x.id));
+    ALL.forEach(x=>{ if(ovr[x.id] !== undefined) x.views = ovr[x.id]; });
+  }
+  document.getElementById('lastUpdated').textContent =
+    v.last_updated ? `마지막 수집: ${v.last_updated}` : '아직 수집된 데이터가 없습니다';
+  buildKeywordSelect();
+  buildIgLinks();
+  render();
+}
+
+function buildKeywordSelect(){
+  const sel = document.getElementById('kwSel');
+  const cur = sel.value;
+  const kws = [...new Set(ALL.map(v=>v.keyword).filter(Boolean))];
+  sel.innerHTML = '<option value="all">키워드 전체</option>' +
+    kws.map(k=>`<option value="${k}">${k}</option>`).join('');
+  if([...sel.options].some(o=>o.value===cur)) sel.value = cur;
+}
+
+function buildIgLinks(){
+  const box = document.getElementById('igLinks');
+  box.innerHTML = (CFG.keywords||[]).map(k=>{
+    const tag = encodeURIComponent('#'+k.replace(/\s+/g,''));
+    return `<a href="https://www.instagram.com/explore/search/keyword/?q=${tag}" target="_blank">#${k.replace(/\s+/g,'')}</a>`;
+  }).join('');
+}
+
+function bucketPass(views, b){
+  if(b==='all') return true;
+  if(views === null || views === undefined) return false; // 조회수 미상은 '전체'에만
+  const n = Number(b);
+  if(n===1000000) return views >= 1000000;
+  if(n===100000)  return views >= 100000 && views < 1000000;
+  if(n===10000)   return views >= 10000  && views < 100000;
+  return views < 10000;
+}
+
+function render(){
+  document.getElementById('igPanel').style.display =
+    (state.platform==='instagram' || state.platform==='all') ? 'block' : 'none';
+
+  let items = ALL.concat(IG.map(e=>({...e, published:e.first_seen||''})));
+  items = items.filter(v=>{
+    if(state.platform!=='all' && v.platform!==state.platform) return false;
+    if(!bucketPass(v.views ?? null, state.bucket)) return false;
+    if(state.kw!=='all' && v.keyword!==state.kw) return false;
+    if(state.q){
+      const q = state.q.toLowerCase();
+      if(!(v.title||'').toLowerCase().includes(q) &&
+         !(v.channel||'').toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+
+  if(state.sort==='views') items.sort((a,b)=>((b.views??-1))-((a.views??-1)));
+  else if(state.sort==='likes') items.sort((a,b)=>(b.likes||0)-(a.likes||0));
+  else items.sort((a,b)=>(b.published||'').localeCompare(a.published||''));
+
+  const counts = {youtube:0, tiktok:0, instagram:0};
+  items.forEach(v=>counts[v.platform]!==undefined && counts[v.platform]++);
+  document.getElementById('stats').textContent =
+    `${items.length}개 표시 — YouTube ${counts.youtube} · TikTok ${counts.tiktok} · Instagram ${counts.instagram}`;
+
+  if(!items.length){
+    grid.innerHTML = STATIC
+      ? `<div class="empty">이 필터 조건에 해당하는 영상이 없습니다.</div>`
+      : `<div class="empty">표시할 영상이 없습니다.<br>
+      우측 상단 <b>“↻ 오늘 데이터 수집”</b>을 눌러 최신 영상을 가져오세요.</div>`;
+    return;
+  }
+
+  grid.innerHTML = items.map(v=>{
+    const badge = {youtube:'YouTube', tiktok:'TikTok', instagram:'Instagram'}[v.platform]||v.platform;
+    const memo = v.memo ? `<div class="sub">📝 ${esc(v.memo)}</div>` : '';
+    let actions = '';
+    if(v.platform==='instagram'){
+      const editBtn = `<button class="delBtn" style="color:#2a7"
+        onclick="event.preventDefault();editViews('${v.id}', ${v.auto?'true':'false'})">조회수 입력</button>`;
+      const delBtn = `<button class="delBtn"
+        onclick="event.preventDefault();delVideo('${v.id}', ${v.auto?'true':'false'})">삭제</button>`;
+      actions = `<div style="display:flex;gap:6px">${editBtn}${delBtn}</div>`;
+    }
+    const thumb = v.thumbnail
+      ? `<img src="${esc(v.thumbnail)}" loading="lazy" referrerpolicy="no-referrer"
+             onerror="this.style.display='none'">`
+      : `<div style="display:flex;align-items:center;justify-content:center;height:100%;
+             font-size:38px;opacity:.35">${v.platform==='instagram'?'📸':'🎬'}</div>`;
+    return `<div class="card">
+      <a class="cardLink" href="${esc(v.url)}" target="_blank" rel="noopener">
+        <div class="thumbWrap">${thumb}
+          <span class="badge ${v.platform}">${badge}</span>
+          <span class="views">▶ ${fmtViews(v.views ?? null)}</span>
+        </div>
+        <div class="meta">
+          <div class="title">${esc(v.title)||'(제목 없음)'}</div>
+          <div class="sub"><span>${esc(v.channel||'')}</span><span>${fmtDate(v.published)}</span></div>
+          ${memo}
+          ${v.keyword?`<span class="kw">${esc(v.keyword)}</span>`:''}
+          ${actions}
+        </div>
+      </a>
+    </div>`;
+  }).join('');
+}
+
+function esc(s){
+  return String(s??'').replace(/[&<>"']/g,
+    c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ---- 필터 이벤트 ----
+document.getElementById('platformTabs').addEventListener('click', e=>{
+  if(e.target.dataset.p===undefined) return;
+  document.querySelectorAll('#platformTabs button').forEach(b=>b.classList.remove('on'));
+  e.target.classList.add('on');
+  state.platform = e.target.dataset.p;
+  render();
+});
+document.getElementById('viewChips').addEventListener('click', e=>{
+  if(e.target.dataset.b===undefined) return;
+  document.querySelectorAll('#viewChips .chip').forEach(b=>b.classList.remove('on'));
+  e.target.classList.add('on');
+  state.bucket = e.target.dataset.b;
+  render();
+});
+document.getElementById('sortSel').addEventListener('change', e=>{state.sort=e.target.value; render()});
+document.getElementById('kwSel').addEventListener('change', e=>{state.kw=e.target.value; render()});
+document.getElementById('search').addEventListener('input', e=>{state.q=e.target.value.trim(); render()});
+
+// ---- 수집 ----
+async function doRefresh(){
+  const btn = document.getElementById('refreshBtn');
+  btn.disabled = true; btn.textContent = '수집 중… (수십 초 소요)';
+  try{
+    const res = await fetch('/api/refresh', {method:'POST'});
+    const j = await res.json();
+    if(j.error){ toast('⚠️ ' + j.error); }
+    else{
+      toast((j.log||[]).join('\n'), 6000);
+      await loadAll();
+    }
+  }catch(e){ toast('수집 실패: ' + e); }
+  btn.disabled = false; btn.textContent = '↻ 오늘 데이터 수집';
+}
+
+// ---- 설정 ----
+function openSettings(){
+  document.getElementById('cfgKeywords').value = (CFG.keywords||[]).join('\n');
+  document.getElementById('cfgDays').value = CFG.days_back || 30;
+  document.getElementById('cfgDomestic').checked = CFG.domestic_only !== false;
+  document.getElementById('cfgIgAuto').checked = CFG.instagram_auto !== false;
+  settingsDlg.showModal();
+}
+async function saveSettings(){
+  const body = {
+    keywords: document.getElementById('cfgKeywords').value.split('\n')
+              .map(s=>s.trim()).filter(Boolean),
+    days_back: Number(document.getElementById('cfgDays').value)||30,
+    domestic_only: document.getElementById('cfgDomestic').checked,
+    instagram_auto: document.getElementById('cfgIgAuto').checked,
+  };
+  await fetch('/api/config', {method:'POST', body:JSON.stringify(body)});
+  settingsDlg.close();
+  toast('설정을 저장했습니다. “오늘 데이터 수집”을 눌러 반영하세요.');
+  const c = await fetch('/api/config'); CFG = await c.json();
+  buildIgLinks();
+}
+
+// ---- Instagram 수동 등록 ----
+async function addInstagram(){
+  const body = {
+    url: document.getElementById('igUrl').value.trim(),
+    title: document.getElementById('igTitle').value.trim(),
+    channel: document.getElementById('igChannel').value.trim(),
+    views: Number(document.getElementById('igViews').value)||0,
+    memo: document.getElementById('igMemo').value.trim(),
+  };
+  if(!body.url){ toast('릴스 URL을 입력해 주세요'); return; }
+  if(STATIC){
+    const list = LS.get('ig_manual', []).filter(e=>e.url!==body.url);
+    list.push({...body, id:'lsig_'+Date.now(), platform:'instagram',
+               first_seen:new Date().toISOString().slice(0,10)});
+    LS.set('ig_manual', list);
+  }else{
+    const res = await fetch('/api/instagram', {method:'POST', body:JSON.stringify(body)});
+    const j = await res.json();
+    if(j.error){ toast('⚠️ '+j.error); return; }
+  }
+  ['igUrl','igTitle','igChannel','igViews','igMemo'].forEach(id=>document.getElementById(id).value='');
+  toast('등록했습니다' + (STATIC?' (이 브라우저에만 저장됨)':''));
+  await loadAll();
+}
+async function delInstagram(id){
+  if(STATIC) LS.set('ig_manual', LS.get('ig_manual', []).filter(e=>e.id!==id));
+  else await fetch('/api/instagram/delete', {method:'POST', body:JSON.stringify({id})});
+  await loadAll();
+}
+
+// 자동 발굴 카드의 조회수 직접 입력 / 삭제
+async function editViews(id, isAuto){
+  const val = prompt('인스타그램 앱에서 확인한 조회수를 입력하세요 (숫자만):');
+  if(val === null) return;
+  const views = Number(String(val).replace(/[^\d]/g,''));
+  if(STATIC){
+    if(isAuto){
+      const ovr = LS.get('view_overrides', {}); ovr[id] = views;
+      LS.set('view_overrides', ovr);
+    }else{
+      const list = LS.get('ig_manual', []);
+      const e = list.find(x=>x.id===id); if(e) e.views = views;
+      LS.set('ig_manual', list);
+    }
+  }else if(isAuto){
+    await fetch('/api/video/update', {method:'POST', body:JSON.stringify({id, views})});
+  }else{
+    const e = IG.find(x=>x.id===id);
+    if(e) await fetch('/api/instagram', {method:'POST',
+      body:JSON.stringify({...e, views})});
+  }
+  await loadAll();
+}
+async function delVideo(id, isAuto){
+  if(STATIC && isAuto){
+    LS.set('hidden', [...new Set([...LS.get('hidden', []), id])]);
+  }else if(isAuto){
+    await fetch('/api/video/delete', {method:'POST', body:JSON.stringify({id})});
+  }else{
+    await delInstagram(id);
+    return;
+  }
+  await loadAll();
+}
+
+// ---- 주간 리포트 ----
+function mdToHtml(md){
+  const lines = esc(md).split('\n');
+  let html = '', inUl = false, inOl = false;
+  const closeLists = ()=>{ if(inUl){html+='</ul>';inUl=false} if(inOl){html+='</ol>';inOl=false} };
+  const inline = s => s
+    .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+    .replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  for(const ln of lines){
+    if(/^### /.test(ln)){ closeLists(); html += `<h3>${inline(ln.slice(4))}</h3>`; }
+    else if(/^## /.test(ln)){ closeLists(); html += `<h2>${inline(ln.slice(3))}</h2>`; }
+    else if(/^# /.test(ln)){ closeLists(); html += `<h1>${inline(ln.slice(2))}</h1>`; }
+    else if(/^&gt; /.test(ln)){ closeLists(); html += `<blockquote>${inline(ln.slice(5))}</blockquote>`; }
+    else if(/^\s*[-•] /.test(ln)){ if(!inUl){closeLists(); html+='<ul>'; inUl=true}
+      html += `<li>${inline(ln.replace(/^\s*[-•] /,''))}</li>`; }
+    else if(/^\s*\d+\. /.test(ln)){ if(!inOl){closeLists(); html+='<ol>'; inOl=true}
+      html += `<li>${inline(ln.replace(/^\s*\d+\. /,''))}</li>`; }
+    else if(ln.trim()===''){ closeLists(); }
+    else { closeLists(); html += `<p>${inline(ln)}</p>`; }
+  }
+  closeLists();
+  return html;
+}
+
+async function loadReportIndex(){
+  try{
+    const r = await fetch('reports/index.json', {cache:'no-store'});
+    if(!r.ok) return [];
+    return await r.json();
+  }catch(e){ return []; }
+}
+
+async function showReport(file){
+  const md = await (await fetch('reports/'+file, {cache:'no-store'})).text();
+  document.getElementById('reportBody').innerHTML = mdToHtml(md);
+}
+
+async function openReport(){
+  let files = await loadReportIndex();
+  if(!STATIC){
+    // 로컬 모드: 열 때마다 최신 데이터로 리포트를 새로 생성
+    try{
+      const r = await fetch('/api/report', {method:'POST'});
+      const j = await r.json();
+      if(j.error){ toast('⚠️ '+j.error); return; }
+      files = await loadReportIndex();
+    }catch(e){ toast('리포트 생성 실패: '+e); return; }
+  }
+  if(!files.length){ toast('아직 생성된 리포트가 없습니다 (매주 월요일 자동 생성)'); return; }
+  const sel = document.getElementById('reportSel');
+  sel.innerHTML = files.map(f=>`<option value="${f}">${f.replace('.md','')} 리포트</option>`).join('');
+  await showReport(files[0]);
+  reportDlg.showModal();
+}
+
+loadAll();
+</script>
+</body>
+</html>
